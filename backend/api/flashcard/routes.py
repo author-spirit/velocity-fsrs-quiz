@@ -1,0 +1,46 @@
+from fastapi import APIRouter
+
+router = APIRouter(prefix="/flashcard", tags=["flashcard"])
+
+from services import flashcard
+from core.config import Config
+from schemas.deck import Deck as DeckSchema
+from schemas.card import Card as CardSchema
+
+
+@router.get("/decks")
+def decks():
+    return flashcard.get_decks()
+
+
+@router.get("/deck/{deck_id}")
+async def deck(deck_id: int, page: int = 1):
+    return flashcard.get_deck_by_id(deck_id, {"page": page})
+
+
+@router.get("/cards/{deck_id}")
+async def cards(deck_id: int, page: int = 1):
+    return flashcard.get_cards(deck_id, {'page': page})
+
+
+@router.post("/deck")
+async def save_deck(deck: DeckSchema):
+    data = {"name": deck.name, "author": deck.author or Config.get("author"), "id": deck.id}
+    return flashcard.save_deck(data)
+
+
+@router.delete("/deck/{deck_id}")
+async def delete_deck(deck_id: int, permanent: int = 0):
+    flashcard.delete_deck(deck_id, permanent)
+    return True
+
+
+@router.post("/card")
+async def save_card(card: CardSchema):
+    data = {"deck_id": card.deck_id, "question": card.question, "answer": card.answer, "id": card.id}
+    return flashcard.save_card(data)
+
+@router.delete("/deck/{deck_id}/card/{card_id}")
+async def delete_card(deck_id: int, card_id: int, permanent: int = 0):
+    flashcard.delete_card(deck_id, card_id, permanent)
+    return True

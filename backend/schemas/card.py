@@ -1,6 +1,9 @@
+from optparse import Option
 from pydantic import BaseModel
-# from schemas.deck import Deck
+from typing import Optional
+
 class Card(BaseModel):
-    deck_id: int
-    question: str
-    answer: str
+    id: Optional[int] = None
+    deck_id: Optional[int] = None
+    question: Optional[str] = None
+    answer: Optional[str] = None
