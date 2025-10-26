@@ -5,11 +5,11 @@ Learning platform provides spaced-repetition, visual learning & contests
 ### Backend
 - Python3 (FlaskAPI)
 
-### Datasource
-- Postgres (JSON Support, RAG)
+### DataModel
+- Sqlite (Peewee)
+- Supabase (after full implementation)
 
 ### Frontend
-- VueJS3
 - Flutter (Planned)
 
 # Schema
@@ -35,3 +35,33 @@ Learning platform provides spaced-repetition, visual learning & contests
 - difficulty | Enum | easy/medium/hard
 - created_time | timestamp
 - modified_time | timestamp
+
+## The Hitchhiker's Guide
+1. Modules: Keep the module names short avoid dot (.), use underscore but limit too much
+2. Readability [Code Style](https://docs.python-guide.org/writing/style/#code-style)
+
+## Folder Structure
+```
+velocity/
+│    backend/
+│    │── main.py
+│    │── core/
+│    │   └── __init__.py
+│    │── db/
+│    │   └── __init__.py
+│    │── models/
+│    │   └── __init__.py
+│    │── schemas/
+│    │   └── __init__.py
+│    │── api/
+│    │   └── __init__.py
+│    │── services/
+│    │   └── __init__.py
+│    │── utils/
+│    │   └── __init__.py
+│    │── tests/
+│    │   └── __init__.py
+│    │── README.md
+│    │── .env
+|    flutter/  
+```
