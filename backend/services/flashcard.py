@@ -130,9 +130,7 @@ def save_card(card_info: dict) -> dict:
                 card.answer = card_info["answer"]
                 updated = True
             if updated:
-
-                # TODO, card modifiedtime & createdtime field migration
-                # card.modifiedtime = datetime.now()
+                card.modifiedtime = datetime.now()
                 card.save()
     return model_to_dict(card)
 
@@ -184,7 +182,8 @@ def delete_deck(deck_id, permanent: int):
             num_deleted = Deck.delete().where(Deck.id == deck_id).execute()
             return num_deleted
         else:
-            # TODO, modifiedtime field migration
+            # TODO, Test newly added trash field
+            deck.is_trash = 1
             deck.modifiedtime = datetime.now()  # This just marks modification, not real trash delete
             deck.save()
             return 1
@@ -214,9 +213,8 @@ def delete_card(deck_id: int, card_id: int, permanent: int):
             num_deleted = Card.delete().where(Card.id == card_id, Deck.id == deck_id).execute()
             return num_deleted
         else:
-            # TODO, implement modifiedtime field in Card model for proper soft delete tracking
-            # card.modifiedtime = datetime.now()  # This just marks modification, not real trash delete
-            # card.save()
+            card.modifiedtime = datetime.now()  # This just marks modification, not real trash delete
+            card.save()
             return 1
     except Exception as e:
         print(e)

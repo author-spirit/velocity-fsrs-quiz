@@ -7,8 +7,8 @@ class Card(BaseModel):
     deck = ForeignKeyField(Deck, backref='cards')
     question = TextField()
     answer = TextField()
-    # createdtime = DateTimeField(default=datetime.now)
-    # modifiedtime = DateTimeField()
+    createdtime = DateTimeField(default=datetime.now)
+    modifiedtime = DateTimeField()
 
     def to_dict(self):
         return {}
