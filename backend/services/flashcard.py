@@ -93,6 +93,12 @@ def get_decks(filters: Union[dict, str] = None) -> Union[dict, list]:
 
     page = int(filters.get("page", 1))
     offset = (page - 1) * PAGE_LIMIT
+
+    # Allow only deleted, otherwise all
+    deleted_filter = filters.get("deleted")
+    if deleted_filter is None or str(deleted_filter).lower() == "false":
+        query = query.where(Deck.is_trash == False)
+
     query = query.limit(PAGE_LIMIT).offset(offset)
     return [model_to_dict(deck) for deck in query]
 
