@@ -16,11 +16,17 @@ def decks(request: Request):
 
 @router.get("/deck/{deck_id}")
 async def deck(deck_id: int, page: int = 1):
+    """
+    Get the deck details along with cards
+    """
     return flashcard.get_deck_by_id(deck_id, {"page": page})
 
 
 @router.get("/cards/{deck_id}")
 async def cards(deck_id: int, page: int = 1):
+    """
+    Get the list of cards from a deck in pages
+    """
     return flashcard.get_cards(deck_id, {'page': page})
 
 
@@ -49,15 +55,17 @@ async def delete_card(deck_id: int, card_id: int, permanent: int = 0):
     return True
 
 
-@router.get("/due")
+@router.get("/cards/due")
 async def get_due():
+    # TODO, finish the card due
     card_due = flashcard.get_card_due()
     return card_due
 
 
-@router.post("/relearn")
-async def relearn():
+@router.post("/cards/learn")
+async def learn():
     """
     Re-review the cards for review
     """
-    flashcard.initiate_card_review()
+    # TODO, finish the learn
+    flashcard.initiate_learning()

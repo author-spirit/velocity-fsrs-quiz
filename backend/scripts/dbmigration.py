@@ -5,6 +5,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from db.database import *
 from playhouse.migrate import *
 from datetime import datetime
+from models.cardreview import CardReview
 
 connect()
 
@@ -12,8 +13,14 @@ def safe_add_column(table, column, field):
     cols = [c.name for c in db.get_columns(table)]
     if column not in cols:
         migrate(migrator.add_column(table, column, field))
+        print(f"'{column}' column successfully added to {table}")
+
 
 migrator = SqliteMigrator(db)
+
+if not CardReview.table_exists():
+    db.create_tables([CardReview])
+    print("CardReview table created")
 
 # Deck Fields
 safe_add_column('deck', 'is_trash', BooleanField(default=False)),

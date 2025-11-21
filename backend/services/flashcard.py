@@ -1,5 +1,6 @@
 from models.card import Card
 from models.deck import Deck
+from models.cardreview import CardReview
 from datetime import datetime
 from db.database import *
 from typing import Optional, Union
@@ -235,14 +236,14 @@ def get_card_due():
     return []
 
 
-def initiate_card_review():
+def initiate_learning():
     """
-    Add the new cards for review
+    Add the new cards for learning
     """
 
     # TODO, get the card_ids excluding the ones that are not yet reviewed
     # load the new cards to for FSRS review
-    query = Card.select(id)
+    query = CardReview.select()
     cards = [model_to_dict(card) for card in query]
     print(cards)
 
