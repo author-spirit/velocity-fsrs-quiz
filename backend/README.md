@@ -19,9 +19,16 @@ Velocity flashcard & quiz app built for easy customization and reliablity
 - **main.py:** Main python executor
 
 ## How To
+### First time installation
+- Run `python3 scripts/setup.py`
+
 ### Server
 - `uvicorn main:app --reload`
 - Running at `localhost:8000`
+
+### Migration
+- Run `python3 scripts/dbmigration.py`
+- 
 
 ## TODO
 - Enable Edit Mode for flashcard
