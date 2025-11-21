@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 router = APIRouter(prefix="/flashcard", tags=["flashcard"])
 
@@ -9,8 +9,9 @@ from schemas.card import Card as CardSchema
 
 
 @router.get("/decks")
-def decks():
-    return flashcard.get_decks()
+def decks(request: Request):
+    query_params = dict(request.query_params)
+    return flashcard.get_decks(query_params)
 
 
 @router.get("/deck/{deck_id}")
@@ -31,6 +32,7 @@ async def save_deck(deck: DeckSchema):
 
 @router.delete("/deck/{deck_id}")
 async def delete_deck(deck_id: int, permanent: int = 0):
+    # TODO, support multiple query params support
     flashcard.delete_deck(deck_id, permanent)
     return True
 
@@ -40,7 +42,22 @@ async def save_card(card: CardSchema):
     data = {"deck_id": card.deck_id, "question": card.question, "answer": card.answer, "id": card.id}
     return flashcard.save_card(data)
 
+
 @router.delete("/deck/{deck_id}/card/{card_id}")
 async def delete_card(deck_id: int, card_id: int, permanent: int = 0):
     flashcard.delete_card(deck_id, card_id, permanent)
     return True
+
+
+@router.get("/due")
+async def get_due():
+    card_due = flashcard.get_card_due()
+    return card_due
+
+
+@router.post("/relearn")
+async def relearn():
+    """
+    Re-review the cards for review
+    """
+    flashcard.initiate_card_review()

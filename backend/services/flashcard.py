@@ -20,7 +20,7 @@ def save_deck(data: dict) -> None:
         dict: The saved deck as a dictionary.
     """
 
-    # TODO, Give way for creating cards
+    # TODO, Give option for creating cards via API
     if not data.get("id"):
         deck = Deck(
             name=data.get("name"),
@@ -225,3 +225,25 @@ def delete_card(deck_id: int, card_id: int, permanent: int):
     except Exception as e:
         print(e)
         raise Exception("Failed to remove card")
+
+
+def get_card_due():
+    """
+    List out all the cards that are due
+    """
+    # TODO, return the list of cards that are due
+    return []
+
+
+def initiate_card_review():
+    """
+    Add the new cards for review
+    """
+
+    # TODO, get the card_ids excluding the ones that are not yet reviewed
+    # load the new cards to for FSRS review
+    query = Card.select(id)
+    cards = [model_to_dict(card) for card in query]
+    print(cards)
+
+
