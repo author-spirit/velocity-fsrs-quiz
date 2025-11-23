@@ -3,7 +3,7 @@
 mkdir -p backend/
 cd backend
 
-for dir in core db models schemas api services utils tests
+for dir in core db models schemas api services utils tests logs
 do
   mkdir -p "$dir"
 done

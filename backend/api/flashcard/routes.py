@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Body, Request, HTTPException
 
 router = APIRouter(prefix="/flashcard", tags=["flashcard"])
 
@@ -63,9 +63,11 @@ async def get_due():
 
 
 @router.post("/cards/learn")
-async def learn():
+async def learn(card_id: int = Body(...), rating: int = Body(None)):
     """
     Re-review the cards for review
     """
-    # TODO, finish the learn
-    flashcard.initiate_learning()
+    due_info = flashcard.learn_card(card_id, rating)
+    if 'error' in due_info:
+        raise HTTPException(status_code=400, detail=due_info['error'])
+    return due_info

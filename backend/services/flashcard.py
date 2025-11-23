@@ -6,6 +6,7 @@ from db.database import *
 from typing import Optional, Union
 import json
 from playhouse.shortcuts import model_to_dict
+from services.spacedrepetition import SpacedRepetition
 
 PAGE_LIMIT = 10
 
@@ -236,15 +237,40 @@ def get_card_due():
     return []
 
 
-def initiate_learning():
+def learn_card(card_id: int, rating: int = None):
     """
-    Add the new cards for learning
+    Attempt to learn a new card by its ID.
+
+    If the card has not yet been learned/reviewed, schedule its first review using spaced repetition.
+    If the card has already been learned/reviewed, returns an error.
+
+    Args:
+        card_id (int): The ID of the card to learn.
+        rating (int, optional): The review rating to use for the initial scheduling.
+
+    Returns:
+        dict: The updated card state including scheduling information, or an error message if already learned.
     """
 
-    # TODO, get the card_ids excluding the ones that are not yet reviewed
-    # load the new cards to for FSRS review
-    query = CardReview.select()
-    cards = [model_to_dict(card) for card in query]
-    print(cards)
+    if CardReview.get_or_none(CardReview.card == card_id):
+        logger.error(f"Card '{card_id}' already learned/reviewed")
+        return {"error": f"Card '{card_id}' already learned/reviewed"}
+
+    sr = SpacedRepetition()
+    result = sr.get_next_due({"card_id": card_id}, rating)
+
+    # Add the entry to CardReview Table
+    # Result: state, step, stability, difficulty, due, last_review
+
+    CardReview.create(
+        card=card_id,
+        state=result.get("state"),
+        step=result.get("step", 1),
+        stability=result.get("stability"),
+        difficulty=result.get("difficulty"),
+        due=result.get("due"),
+        last_review=result.get("last_review"),
+    )
+    return result
 
 
