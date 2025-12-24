@@ -14,7 +14,6 @@ class Config:
 
     def cast_value(self, value):
         if type(value) == str:
-            print(value, value.isdigit())
             if value.lower() in ("true", "false"):
                 # If value is true | false then it is boolean
                 value = value.lower() == "true"

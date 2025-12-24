@@ -1,4 +1,4 @@
-from peewee import ForeignKeyField, TextField, DateTimeField
+from peewee import ForeignKeyField, TextField, DateTimeField, BooleanField
 from db.database import BaseModel
 from datetime import datetime
 from models.deck import Deck
@@ -9,6 +9,4 @@ class Card(BaseModel):
     answer = TextField()
     createdtime = DateTimeField(default=datetime.now)
     modifiedtime = DateTimeField()
-
-    def to_dict(self):
-        return {}
+    is_trash = BooleanField(default=False)

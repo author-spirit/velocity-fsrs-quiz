@@ -31,8 +31,14 @@ Velocity flashcard & quiz app built for easy customization and reliablity
 - 
 
 ## TODO
-- Enable Edit Mode for flashcard
-- Provide Quiz Service
+[x] Enable Edit Mode for flashcard
+[x] Integrate FSRS and enable card review
+[x] Enable Learning and Due cards APIs
+[ ] Refine loggers
+[ ] Provide Quiz Service
+
+## Spaced Repetition
+Velocity uses (Py-FSRS service)(https://github.com/open-spaced-repetition/py-fsrs)
 
 ## Endpoints
 - Get Card By Id

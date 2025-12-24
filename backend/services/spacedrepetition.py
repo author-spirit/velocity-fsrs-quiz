@@ -6,17 +6,13 @@ Ref: https://github.com/open-spaced-repetition/py-fsrs
 """
 
 from fsrs import Scheduler, Card, Rating
-
-RATINGS = {
-    1: Rating.Again,
-    2: Rating.Hard,
-    3: Rating.Good,
-    4: Rating.Easy
-}
+from playhouse.shortcuts import model_to_dict
+from core.logs import logger
+from models.cardreview import CardReview
 
 class SpacedRepetition:
 
-    def get_next_due(self, card_info: dict, rating: int = None) -> dict:
+    def get_next_due(self, card_id: int, user_rating: Rating) -> dict:
         """
         Calculate the next due date for a card based on review rating.
 
@@ -31,21 +27,63 @@ class SpacedRepetition:
 
         # TODO, test result with and without fuzzing
         scheduler = Scheduler(enable_fuzzing=False)
-
+        cardreview = CardReview.get_or_none(CardReview.card == card_id)
 
         # for new card use card_id only
-        if 'state' in card_info:
-            card = Card.from_dict(card_info)
-        else:
-            card = Card(card_id=card_info.get("card_id"))
+        if cardreview:
+            # cardreview['difficulty'] = difficulty
 
-        rating = RATINGS.get(rating, RATINGS[3])        # REVIEW, Default Good
+            cardinfo = model_to_dict(cardreview, recurse=False)
+            cardinfo["card_id"] = card_id
+            del cardinfo["id"]
+            logger.info("Previous Card Review")
+            logger.info(cardinfo) 
+            card = Card.from_dict(cardinfo)
+        else:
+            logger.info("Packing new card review")
+            card = Card(card_id=card_id)
+
+        logger.info(f"New User rating {user_rating}")
         
-        scheduled_card, _ = scheduler.review_card(card, rating)
-        print("Due Date", scheduled_card.to_json())
+        reviewed_card, _ = scheduler.review_card(card, user_rating.value)
+        logger.info("Next Due")
+        logger.info(reviewed_card.to_json())
+
+        self.save_cardreview(card_id, reviewed_card.to_dict())
 
         # To check retrievability
-        retrieve = scheduler.get_card_retrievability(scheduled_card)
-        print(retrieve)
+        # retrieve = scheduler.get_card_retrievability(reviewed_card)
 
-        return scheduled_card.to_dict()
+        return reviewed_card.to_dict()
+
+    def save_cardreview(self, card_id: int, result: dict) -> None:
+        """
+        Create a new CardReview if it doesn't exist, or update the existing one.
+        Args:
+            card_id (int): The card's ID.
+            result (dict): State dictionary to update or create with.
+        """
+        cardreview = CardReview.get_or_none(CardReview.card == card_id)
+        if cardreview:
+            logger.info("Updating Card Review")
+            logger.info(result)
+            cardreview.state = result.get("state")
+            cardreview.step = result.get("step")
+            cardreview.stability = result.get("stability")
+            cardreview.difficulty = result.get("difficulty")
+            cardreview.due = result.get("due")
+            cardreview.last_review = result.get("last_review")
+            logger.info(model_to_dict(cardreview, recurse=False))
+            cardreview.save()
+        else:
+            logger.info("Creating Card Review")
+            logger.info(result)
+            CardReview.create(
+                card=card_id,
+                state=result.get("state"),
+                step=result.get("step", 1),
+                stability=result.get("stability"),
+                difficulty=result.get("difficulty"),
+                due=result.get("due"),
+                last_review=result.get("last_review"),
+            )

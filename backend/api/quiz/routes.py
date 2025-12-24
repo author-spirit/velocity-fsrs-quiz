@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 router = APIRouter(prefix="/quiz", tags=["quiz"])
 
-# TODO, implementation goes here.
-# CRUD, sockets, 
+@router.get("/")
+async def get_quiz():
+    return "TODO"

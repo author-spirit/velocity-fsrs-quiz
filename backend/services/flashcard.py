@@ -1,16 +1,17 @@
+from core.logs import logger
 from models.card import Card
 from models.deck import Deck
 from models.cardreview import CardReview
 from datetime import datetime
-from db.database import *
-from typing import Optional, Union
+from typing import Union
 import json
 from playhouse.shortcuts import model_to_dict
 from services.spacedrepetition import SpacedRepetition
+from utils import helpers
 
 PAGE_LIMIT = 10
 
-def save_deck(data: dict) -> None:
+def save_deck(data: dict) -> dict:
     """
     Saves a deck to the database. If 'id' is not present in data, creates a new deck.
     If 'id' is present, updates the existing deck with new information.
@@ -22,7 +23,6 @@ def save_deck(data: dict) -> None:
         dict: The saved deck as a dictionary.
     """
 
-    # TODO, Give option for creating cards via API
     if not data.get("id"):
         deck = Deck(
             name=data.get("name"),
@@ -32,18 +32,19 @@ def save_deck(data: dict) -> None:
         )
         deck.save()
     else:
-        deck = Deck.get_or_none(Deck._meta.primary_key == data.get("id"))
-        if deck:
-            updated = False
-            if "name" in data and deck.name != data["name"]:
-                deck.name = data["name"]
-                updated = True
-            if "author" in data and deck.author != data["author"]:
-                deck.author = data["author"]
-                updated = True
-            if updated:
-                deck.modifiedtime = datetime.now()
-                deck.save()
+        deck = Deck.get_or_none(data.get("id"))
+        if not deck:
+            raise ValueError(f"Deck with id '{data.get('id')}' does not exist.")
+        updated = False
+        if "name" in data and deck.name != data["name"]:
+            deck.name = data["name"]
+            updated = True
+        if "author" in data and deck.author != data["author"]:
+            deck.author = data["author"]
+            updated = True
+        if updated:
+            deck.modifiedtime = datetime.now()
+            deck.save()
 
     return model_to_dict(deck)
 
@@ -62,7 +63,7 @@ def get_deck_by_id(id: int, filters: dict) -> dict:
         filters = {"page": 1}
 
     try:
-        deck_obj = Deck.get_or_none(Deck.id == id)
+        deck_obj = Deck.get_or_none(id)
         if not deck_obj:
             return {}
         deck_dict = model_to_dict(deck_obj)
@@ -71,7 +72,7 @@ def get_deck_by_id(id: int, filters: dict) -> dict:
         deck_dict["cards"] = get_cards(id, filters)
         return deck_dict
     except Exception as e:
-        print(e)
+        logger.error(e)
         return {}
 
 
@@ -90,7 +91,7 @@ def get_decks(filters: Union[dict, str] = None) -> Union[dict, list]:
         except Exception:
             pass
 
-    if not filters:
+    if not filters or not isinstance(filters, dict):
         filters = {"page": 1}
 
     page = int(filters.get("page", 1))
@@ -120,6 +121,7 @@ def save_card(card_info: dict) -> dict:
     if not card_info.get("id"):
         deck_id = card_info.get("deck_id")
         if not deck_id:
+            logger.info("Deck not provided")
             raise Exception(status_code=404, detail="Deck not provided")
 
         card = Card(
@@ -128,22 +130,23 @@ def save_card(card_info: dict) -> dict:
         card.save()
 
     else:
-        card = Card.get_or_none(Card._meta.primary_key == card_info.get("id"))
-        if card:
-            updated = False
-            if "question" in card_info and card.question != card_info["question"]:
-                card.question = card["question"]
-                updated = True
-            if "answer" in card_info and card.answer != card_info["answer"]:
-                card.answer = card_info["answer"]
-                updated = True
-            if updated:
-                card.modifiedtime = datetime.now()
-                card.save()
-    return model_to_dict(card)
+        card = Card.get_or_none(card_info.get("id"))
+        if not card:
+            raise ValueError(f"Card with id '{card_info.get('id')}' does not exist.")
+        updated = False
+        if "question" in card_info and card.question != card_info.get("question"):
+            card.question = card_info["question"]
+            updated = True
+        if "answer" in card_info and card.answer != card_info.get("answer"):
+            card.answer = card_info["answer"]
+            updated = True
+        if updated:
+            card.modifiedtime = datetime.now()
+            card.save()
+    return model_to_dict(card, recurse=False)
 
 
-def get_cards(deck_id: int, filters: Union[dict | str]) -> dict:
+def get_cards(deck_id: int, filters: Union[dict | str]) -> list:
     """Get Cards belongs to deck
     Args:
         deck_id (int): Deck ID
@@ -164,113 +167,141 @@ def get_cards(deck_id: int, filters: Union[dict | str]) -> dict:
     page = int(filters.get("page", 1))
     offset = (page - 1) * PAGE_LIMIT
     query = query.where(Card.deck == deck_id).limit(PAGE_LIMIT).offset(offset)
-    return [model_to_dict(deck) for deck in query]
+    return [model_to_dict(card, recurse=False) for card in query]
 
 
-def delete_deck(deck_id, permanent: int):
+def delete_deck(deck_id: int):
     """
     Delete a deck by its ID.
 
     Args:
         deck_id (int): The ID of the deck to delete.
-        permanent (int): If 1, perform a hard delete (permanently remove the deck from the database).
-                        If 0, perform a soft delete (update the modified time but keep the deck).
-
     Returns:
         int: Number of rows deleted (for hard delete), or 1 for soft delete.
     """
 
-    # TODO, If # of cards available then do not allow to delete
+    # TODO, check deck_in_use
+    try:
+        num_deleted = Deck.delete().where(Deck.id == deck_id).execute()
+        if num_deleted == 0:
+            raise ValueError(f"Deck Id '{deck_id}' does not exist.")
+        return True
+    except ValueError:
+        raise
+    except Exception as e:
+        logger.error(e)
+        raise RuntimeError("Failed to delete deck") from e
+
+def trash_deck(deck_id) -> bool:
+    """
+    Mark the deck as trashed (set is_trash to True).
+    """
+
+    # TODO, check deck_in_use
     try:
         deck = Deck.get_or_none(Deck.id == deck_id)
         if not deck:
-            raise Exception("Deck not found")
-        if permanent == 1:
-            # Hard delete
-            num_deleted = Deck.delete().where(Deck.id == deck_id).execute()
-            return num_deleted
-        else:
-            # TODO, Test newly added trash field
-            deck.is_trash = 1
-            deck.modifiedtime = datetime.now()  # This just marks modification, not real trash delete
-            deck.save()
-            return 1
+            raise ValueError(f"Deck Id '{deck_id}' does not exist.")
+        deck.is_trash = True
+        deck.modifiedtime = datetime.now()
+        deck.save()
+        return True
+    except ValueError:
+        raise
     except Exception as e:
-        print(e)
-        raise Exception("Failed to remove deck")
+        logger.error(e)
+        raise RuntimeError("Failed to trash deck") from e
 
 
-def delete_card(deck_id: int, card_id: int, permanent: int):
+def delete_card(card_id: int) -> bool:
     """
     Delete a card by its ID.
 
     Args:
         card_id (int): The ID of the card to delete.
-        permanent (int): If 1, perform a hard delete (permanently remove the card from the database).
-                        If 0, perform a soft delete (update the modified time but keep the card).
 
     Returns:
-        int: Number of rows deleted (0 if no card was deleted).
+        bool: True if the card was deleted, False otherwise.
+
+    Raises:
+        ValueError: If the card with the given ID does not exist.
+        RuntimeError: If an error occurs during deletion.
     """
     try:
-        card = Card.get_or_none(Card.id == card_id, Deck.id == deck_id)
-        if not card:
-            raise Exception("Card not found")
-        if permanent == 1:
-            # Hard delete
-            num_deleted = Card.delete().where(Card.id == card_id, Deck.id == deck_id).execute()
-            return num_deleted
-        else:
-            card.modifiedtime = datetime.now()  # This just marks modification, not real trash delete
-            card.save()
-            return 1
+        num_deleted = Card.delete().where(Card.id == card_id).execute()
+        if num_deleted == 0:
+            raise ValueError(f"Card Id '{card_id}' does not exist.")
+        return True
+    except ValueError:
+        raise
     except Exception as e:
-        print(e)
-        raise Exception("Failed to remove card")
+        raise RuntimeError("Failed to delete card") from e
 
 
-def get_card_due():
+def trash_card(card_id: int) -> bool:
+    """
+    Mark the card as trashed (set is_trash to True) by card_id in a deck.
+    Args:
+        card_id (int): The ID of the card to trash.
+    Returns:
+        int: 1 if successful, raises Exception otherwise.
+    Raises:
+        ValueError: If the card with the given ID does not exist.
+        RuntimeError: If an error occurs during trash.
+    """
+    try:
+        # TODO, DeckId not required  & (Card.deck == deck_id) ??
+        card = Card.get_or_none(Card.id == card_id)
+        if not card:
+            raise ValueError(f"Card Id '{card_id}' does not exist.")
+        card.is_trash = True
+        card.modifiedtime = datetime.now()
+        card.save()
+        return True
+    except ValueError:
+        raise
+    except Exception as e:
+        raise RuntimeError("Failed to trash card") from e
+
+
+def get_due_cards(filters: Union[dict, str]):
     """
     List out all the cards that are due
     """
-    # TODO, return the list of cards that are due
-    return []
 
+    if isinstance(filters, str):
+        filters = helpers.safe_json_parse(filters)
+        filters = filters or {}
+    
+    page = int(filters.get("page", 1))
+    offset: int = (page - 1) * PAGE_LIMIT
 
-def learn_card(card_id: int, rating: int = None):
+    query = CardReview.select()
+
+    if "deck_id" in filters:
+        deck_id = filters.get("deck_id")
+        query = query.join(Card).where(Card.deck == deck_id)
+
+    due_cards = query.where(CardReview.due <= datetime.now()).limit(PAGE_LIMIT).offset(offset)
+    return [model_to_dict(card, recurse=False) for card in due_cards]
+
+def get_next_due(card_id: int, user_rating: int):
     """
-    Attempt to learn a new card by its ID.
-
-    If the card has not yet been learned/reviewed, schedule its first review using spaced repetition.
-    If the card has already been learned/reviewed, returns an error.
-
+    Get the due of given card
     Args:
-        card_id (int): The ID of the card to learn.
-        rating (int, optional): The review rating to use for the initial scheduling.
-
+        card_id (int): Card Id
+        difficulty (int): card difficulty
+            - 1: Very Hard
+            - 2: Hard
+            - 3: Good
+            - 4: Easy
     Returns:
-        dict: The updated card state including scheduling information, or an error message if already learned.
+        dict: Next Due information of reviewed card
     """
-
-    if CardReview.get_or_none(CardReview.card == card_id):
-        logger.error(f"Card '{card_id}' already learned/reviewed")
-        return {"error": f"Card '{card_id}' already learned/reviewed"}
-
+    # Check if CardReview exists
     sr = SpacedRepetition()
-    result = sr.get_next_due({"card_id": card_id}, rating)
+    result = sr.get_next_due(card_id, user_rating)
 
-    # Add the entry to CardReview Table
-    # Result: state, step, stability, difficulty, due, last_review
-
-    CardReview.create(
-        card=card_id,
-        state=result.get("state"),
-        step=result.get("step", 1),
-        stability=result.get("stability"),
-        difficulty=result.get("difficulty"),
-        due=result.get("due"),
-        last_review=result.get("last_review"),
-    )
     return result
 
 

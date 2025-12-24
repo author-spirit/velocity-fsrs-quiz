@@ -1,7 +1,8 @@
 __pycache__/
+.env
 backend/.env
 backend/db/*.db
 backend/db/*.db-shm
 backend/db/*.db-wal
-
-logs/*.log
+backend/.vscode/*
+backend/logs/*.log
