@@ -13,12 +13,16 @@ def list_decks(request: Request):
 
 @router.post("/")
 async def save_deck(deck: DeckSchema):
-    data = {
-        "name": deck.name,
-        "author": deck.author or Config.get("author", "unknown"),
-        "id": deck.id,
-    }
-    return flashcard.save_deck(data)
+    try:
+        data = {
+            "name": deck.name,
+            "author": deck.author or Config.get("author", "unknown"),
+            "id": deck.id,
+        }
+        return flashcard.save_deck(data)
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(status_code=401, detail=str(e))
 
 @router.get("/{deck_id}")
 async def get_deck(deck_id: int, page: int = 1):
