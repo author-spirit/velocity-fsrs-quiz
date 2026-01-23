@@ -21,7 +21,11 @@ async def save_card(card: CardSchema):
         "question": card.question,
         "answer": card.answer,
     }
-    return flashcard.save_card(data)
+    try:
+        return flashcard.save_card(data)
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.patch("/")
 async def edit_card(card: CardSchema):

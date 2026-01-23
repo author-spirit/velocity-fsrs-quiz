@@ -1,8 +1,10 @@
 ## Intro
-Velocity flashcard & quiz app built for easy customization and reliablity
+Velocity flashcard & quiz app built for easy customization and reliablity. 
+
+Velocity uses (Py-FSRS service)(https://github.com/open-spaced-repetition/py-fsrs)
 
 ## Requirements
-- Server: FastAPI - Async, Uvicorn
+- Server: FastAPI
 - Database: Sqlite, peewee ORM, Pydantic
 
 ## Folder Structure
@@ -28,31 +30,7 @@ Velocity flashcard & quiz app built for easy customization and reliablity
 
 ### Migration
 - Run `python3 scripts/dbmigration.py`
-- 
 
-## TODO
-[x] Enable Edit Mode for flashcard
-[x] Integrate FSRS and enable card review
-[x] Enable Learning and Due cards APIs
-[ ] Refine loggers
-[ ] Provide Quiz Service
-
-## Spaced Repetition
-Velocity uses (Py-FSRS service)(https://github.com/open-spaced-repetition/py-fsrs)
-
-## Endpoints
-- Get Card By Id
-```
-GET: {url}/flashcard/deck/{id}
-Response: JSON
-```
-
-- Create Deck
-```
-POST: {url}/flashcard/deck
-Request Body:
-{
-    "name": <Name of Deck>
-    "author": <Author Name>
-}
-```
+## Apis
+Use swagger
+> http://127.0.0.1:8000/docs

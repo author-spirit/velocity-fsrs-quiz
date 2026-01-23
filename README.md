@@ -1,39 +1,36 @@
-# Velocity
-Learning platform provides spaced-repetition, visual learning & contests
+## Intro
+Velocity flashcard & quiz app built for easy customization and reliablity.
 
-## Components
-### Backend
-- Python3 (FastAPI)
+Velocity uses (Py-FSRS service)(https://github.com/open-spaced-repetition/py-fsrs)
 
-### Frontend
-- Flutter (Planned)
+## Requirements
+- Server: FastAPI
+- Database: Sqlite, peewee ORM, Pydantic
 
-## The Hitchhiker's Guide
-1. Modules: Keep the module names short avoid dot (.), use underscore but limit too much
-2. Readability [Code Style](https://docs.python-guide.org/writing/style/#code-style)
+## Backend folder Structure
+- **core:** contains core functionalities of app like config, connector etc
+- **db:** database related files - SQLite connector, Sqlite DB file
+- **models:** ORM, database models
+- **schema:** pydantic schema for my tables
+- **scripts:** Runnable scripts
+- **services:** features provided by the app
+    - **flashcard:** Deck, Card and other operations
+    - **quiz:** Quiz operations
+- **tests:** unit tests
+- **.env:** configurations
+- **main.py:** Main python executor
 
-## Folder Structure
-```
-velocity/
-│    backend/
-│    │── main.py
-│    │── core/
-│    │   └── __init__.py
-│    │── db/
-│    │   └── __init__.py
-│    │── models/
-│    │   └── __init__.py
-│    │── schemas/
-│    │   └── __init__.py
-│    │── api/
-│    │   └── __init__.py
-│    │── services/
-│    │   └── __init__.py
-│    │── utils/
-│    │   └── __init__.py
-│    │── tests/
-│    │   └── __init__.py
-│    │── README.md
-│    │── .env
-|    flutter/  
-```
+## How To
+### First time installation
+- Run `python3 scripts/setup.py`
+
+### Server
+- `uvicorn main:app --reload`
+- Running at `localhost:8000`
+
+### Migration
+- Run `python3 scripts/dbmigration.py`
+
+## Apis
+Use swagger
+> http://127.0.0.1:8000/docs
