@@ -1,13 +1,21 @@
 from core.config import Config
-import logging
+from loguru import logger
+import sys
 
-# Get log level and file location from config
+# Get log file location and log level from config or set default
 log_file = Config.get("LOG_LOCATION", "app.log")
+log_level = Config.get("LOG_LEVEL", "INFO")
 
-logging.basicConfig(
-    level=Config.get("log_level", logging.INFO),
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
+logger.remove()
+
+logger.add(sys.stdout, level=log_level.upper())
+logger.add(
+    log_file,
+    rotation="10 MB",                 # Rotate after 10 MB
+    retention="10 days",              # Keep logs for 10 days
+    compression="zip",                # Compress rotated logs
+    backtrace=True,                   # Show backtrace on errors
+    diagnose=True,                    # Detailed stacktrace
+    enqueue=True,                     # For multiprocess safety
 )
 
-logger = logging.getLogger("velocity")
