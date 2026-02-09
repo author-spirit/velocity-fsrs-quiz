@@ -8,6 +8,7 @@ import json
 from playhouse.shortcuts import model_to_dict
 from services.spacedrepetition import SpacedRepetition
 from utils import helpers
+from peewee import fn
 
 PAGE_LIMIT = 10
 
@@ -362,6 +363,34 @@ class Flashcard:
         return [model_to_dict(card, recurse=False) for card in due_cards]
 
     @staticmethod
+    def get_due_decks(filters: dict) -> list:
+        page = int(filters.get("page", 1))
+        offset: int = (page - 1) * PAGE_LIMIT
+
+        query = (
+            CardReview
+            .select(
+                fn.COUNT(CardReview.id).alias("count"),
+                Deck.id.alias("deck_id"),
+                Deck.name.alias("deck_name")
+            )
+            .join(Card, on=(Card.id == CardReview.card_id))
+            .join(Deck, on=(Deck.id == Card.deck))
+            .group_by(Deck.id)
+            .limit(PAGE_LIMIT)
+            .offset(offset)
+        )
+
+        results = []
+        for row in query.dicts():
+            results.append({
+                "count": row["count"],
+                "deck_id": row["deck_id"],
+                "deck_name": row["deck_name"]
+            })
+        return results
+
+    @staticmethod
     def get_next_due(card_id: int, user_rating: int):
         """
         Get the due of given card
@@ -380,64 +409,3 @@ class Flashcard:
         result = sr.get_next_due(card_id, user_rating)
 
         return result
-
-
-# Module-level functions for backward compatibility
-def save_deck(data: dict) -> dict:
-    """Backward compatibility wrapper."""
-    return Flashcard.save_deck(data)
-
-
-def get_deck_by_id(id: int, filters: dict) -> dict:
-    """Backward compatibility wrapper."""
-    return Flashcard.get_deck_by_id(id, filters)
-
-
-def get_decks(filters: Optional[Union[dict, str]] = None) -> Union[dict, list]:
-    """Backward compatibility wrapper."""
-    return Flashcard.get_decks(filters)
-
-
-def save_card(card_info: dict) -> dict:
-    """Backward compatibility wrapper."""
-    return Flashcard.save_card(card_info)
-
-
-def get_cards(deck_id: int, filters: Union[dict, str]) -> list:
-    """Backward compatibility wrapper."""
-    return Flashcard.get_cards(deck_id, filters)
-
-
-def is_deck_in_use(deck_id: int) -> bool:
-    """Backward compatibility wrapper."""
-    return Flashcard.is_deck_in_use(deck_id)
-
-
-def delete_deck(deck_id: int) -> bool:
-    """Backward compatibility wrapper."""
-    return Flashcard.delete_deck(deck_id)
-
-
-def trash_deck(deck_id: int) -> bool:
-    """Backward compatibility wrapper."""
-    return Flashcard.trash_deck(deck_id)
-
-
-def delete_card(card_id: int) -> bool:
-    """Backward compatibility wrapper."""
-    return Flashcard.delete_card(card_id)
-
-
-def trash_card(card_id: int) -> bool:
-    """Backward compatibility wrapper."""
-    return Flashcard.trash_card(card_id)
-
-
-def get_due_cards(filters: Optional[Union[dict, str]] = None):
-    """Backward compatibility wrapper."""
-    return Flashcard.get_due_cards(filters)
-
-
-def get_next_due(card_id: int, user_rating: int):
-    """Backward compatibility wrapper."""
-    return Flashcard.get_next_due(card_id, user_rating)

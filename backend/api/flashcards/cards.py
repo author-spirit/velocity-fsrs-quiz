@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from services import flashcard
+from services.flashcard import flashcard
 from schemas.card import Card as CardSchema
 from core.logs import logger
 
@@ -10,7 +10,7 @@ async def list_cards(deck_id: int, page: int = 1):
     """
     Get the list of cards from a deck in pages via query params: /cards?deck_id=1&page=1
     """
-    return flashcard.get_cards(deck_id, {'page': page})
+    return Flashcard.get_cards(deck_id, {'page': page})
 
 
 @router.post("/")
@@ -22,7 +22,7 @@ async def save_card(card: CardSchema):
         "answer": card.answer,
     }
     try:
-        return flashcard.save_card(data)
+        return Flashcard.save_card(data)
     except Exception as e:
         logger.error(e)
         raise HTTPException(status_code=400, detail=str(e))
@@ -39,12 +39,12 @@ async def edit_card(card: CardSchema):
         "deck_id": card.deck_id,
     }
     logger.info(data)
-    return flashcard.save_card(data)
+    return Flashcard.save_card(data)
 
 @router.delete("/{card_id}")
 async def delete_card(card_id: int):
     try:
-        res: bool = flashcard.delete_card(card_id)
+        res: bool = Flashcard.delete_card(card_id)
         return {"deleted": res}
     except Exception as e:
         logger.error(e)
@@ -60,7 +60,7 @@ async def trash_card(card_id: int):
         card_id (int): card id to trash 
     """
     try:
-        res: bool = flashcard.trash_card(card_id)
+        res: bool = Flashcard.trash_card(card_id)
         return {"trashed": res, "card_id": card_id}
     except Exception as e:
         logger.error(e)
